@@ -14,7 +14,7 @@ PARTY_OFFSETS = {
 "radicalred": 0x45284,
 "crystal": 0x60DF,
 "white2" : 0x22AB0C,
-"stormsilver": 0x288A28
+"stormsilver": 0x288998
 }
 
 # OFFSET TABLE - These are required for the main script to locate data. All are relative to the PARTY_OFFSET
