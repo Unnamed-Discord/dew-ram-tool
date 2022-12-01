@@ -28,12 +28,13 @@ EXPORT_PARTY = True # Whether to export the current party to HTML_DIR/party/
 SHOW_MISC_DATA = False # Whether to show misc. trainer/badge data in status.html - not fully implemented
 SHOW_BOX_DATA = False # Whether to show current box data in status.html - not fully implemented
 BYPASS_CHECKSUM = False # Whether to bypass checksum tests when reading memory data (Not recommended - but checksum is broken for some games)
+# For the DS games, since memory is a bit wonky, you probably want BYPASS_CHECKSUM set to False. Otherwise it's prone to pull garbage data randomly
 
 # CONFIG OPTIONS - edit as needed
 GAME_GENERATION = 4 # Generation number of the current game
 GAME_NAME = "stormsilver" # Currently valid options: see pr_data.py
-HTML_DIR = "/var/www/html/tpp/new/" # Directory to save html and png output files
-SPRITE_DIR = HTML_DIR+"sprites/home/" # Directory to pull sprites from
+#HTML_DIR = "/var/www/html/tpp/new/" # Directory to save html and png output files
+#SPRITE_DIR = HTML_DIR+"sprites/home/" # Directory to pull sprites from
 #HTML_DIR = "./html/" # local testing
 #SPRITE_DIR = "./sprites/home/" # local testing
 
@@ -848,6 +849,7 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
         elif (gen == 4):
             party[i].spec = readByte16(dkm, 0x8)
             party[i].item = readByte16(dkm, 0xa)
+            party[i].happiness = dkm[0x14]
             party[i].ability = dkm[0x15]
             party[i].gender = gen4Gender(party[i].spec, party[i].pid)
             party[i].name_raw = dkm[0x48:0x5e]
@@ -908,10 +910,11 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
             
             if GAME_NAME in ["radicalred"]:
                 print("Spe_R: {}".format(spec_raw), end=" | ")
-            print("Spe: {} ({})".format(party[i].spec, species_names[party[i].spec]), end=" | ")
+            print("ID: {} ({})".format(party[i].spec, species_names[party[i].spec]), end=" | ")
             print("Frm: {}".format(party[i].form), end=" | ")
-            print("Itm_Raw: {}".format(item_pre_san), end=" | ")
-            print("Itm: {}".format(party[i].item))
+            # print("Itm_Raw: {}".format(item_pre_san), end=" | ")
+            print("Hap: {}".format(party[i].happiness), end=" | ")
+            print("ItID: {}".format(party[i].item))
             
             if GAME_GENERATION > 3:
                 itemname = itemmap[3][party[i].item]
@@ -919,7 +922,7 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
                 itemname = itemmap[3][radicalred_items[party[i].item]]
             else:
                 itemname = itemmap[gen-1][party[i].item]
-            print("Lv: {0} | Ab: {1} | I: {2} | HP: {3}/{4}".format(party[i].lvl, \
+            print("Lv: {0} | Ab: {1} | It: {2} | HP: {3}/{4}".format(party[i].lvl, \
             abilities[party[i].ability], itemname, party[i].hp, party[i].maxhp))
             print("IVs: HP {0} | Atk {1} | Def {2} | Spe {3} | SpA {4} | SpD {5}".format(party[i].ivs["hp"], \
         party[i].ivs["atk"], party[i].ivs["def"], party[i].ivs["spe"], party[i].ivs["spa"], party[i].ivs["spd"]))
