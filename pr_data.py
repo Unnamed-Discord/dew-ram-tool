@@ -14,7 +14,8 @@ PARTY_OFFSETS = {
 "radicalred": 0x45284,
 "crystal": 0x60DF,
 "white2" : 0x22AB0C,
-"stormsilver": 0x288998
+"stormsilver": 0x288998,
+"brown": 0xDA43
 }
 
 # OFFSET TABLE - These are required for the main script to locate data. All are relative to the PARTY_OFFSET
@@ -136,6 +137,18 @@ OFFSET_TABLE = { \
 "trainer_name": PARTY_OFFSETS["stormsilver"] - 0x34, \
 "rival_name": None, \
 "party_size": PARTY_OFFSETS["stormsilver"] - 0x4, \
+"time_hour": None, \
+"time_min": None, \
+"time_sec": None, \
+"badges": None, \
+"gender": None },
+\
+"brown": # Brown
+{ "party": PARTY_OFFSETS["brown"], \
+"battle_party": PARTY_OFFSETS["brown"], \
+"trainer_name": PARTY_OFFSETS["brown"] - 0x13, \
+"rival_name": None, \
+"party_size": PARTY_OFFSETS["brown"] - 0x8, \
 "time_hour": None, \
 "time_min": None, \
 "time_sec": None, \
@@ -390,6 +403,17 @@ charmap = [ \
 3394: b'\xe1\x84\x91', 3395: b'\xe1\x84\x92', 3396: b'\xe1\x85\xa1', 3397: b'\xe1\x85\xa2', 3398: b'\xe1\x85\xa3', 3399: b'\xe1\x85\xa4', 3400: b'\xe1\x85\xa5', 3401: b'\xe1\x85\xa6', 3402: b'\xe1\x85\xa7', 3403: b'\xe1\x85\xa8', 3404: b'\xe1\x85\xa9', 3405: b'\xe1\x85\xad', 3406: b'\xe1\x85\xae', \
 3407: b'\xe1\x85\xb2', 3408: b'\xe1\x85\xb3', 3409: b'\xe1\x85\xb5', 3425: b'\xeb\xa2\x94', 3426: b'\xec\x8c\xb0', 3427: b'\xec\x8e\xbc', 3428: b'\xec\x93\x94', 3429: b'\xec\xac\xac', 65535: b' ' }
   ]
+  
+# species map
+species_map = { \
+# gen 1 
+"gen1" : [ 0, 153, 9, 154, 176, 178, 180, 177, 179, 28, 123, 124, 125, 112, 113, 114, 36, 150, 151, 165, 166, 5, 35, 108, 45, 84, 85, 96, \
+97, 15, 168, 16, 3, 167, 7, 4, 142, 82, 83, 100, 101, 107, 130, 185, 186, 187, 109, 46, 65, 119, 59, 118, 77, 144, 47, 128, 57, \
+117, 33, 20, 71, 110, 111, 148, 38, 149, 106, 41, 126, 188, 189, 190, 24, 155, 169, 39, 49, 163, 164, 37, 8, 173, 54, 64, 70, \
+116, 58, 120, 13, 136, 23, 139, 25, 147, 14, 34, 48, 129, 78, 138, 6, 141, 12, 10, 17, 145, 43, 44, 11, 55, 143, 18, 1, 40, 30, \
+2, 92, 93, 157, 158, 27, 152, 42, 26, 72, 53, 51, 29, 60, 133, 22, 19, 76, 102, 105, 104, 103, 170, 98, 99, 90, 91, 171, 132, \
+74, 75, 73, 88, 89, 66, 131, 21 ]
+}
 
 # item maps
 itemmap = [ \

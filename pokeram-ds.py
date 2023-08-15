@@ -24,19 +24,19 @@ import base64
 # LOGGING OPTIONS - edit as needed
 PRINT_VERBOSE = True # Verbose logging, shows more info including party stats
 PRINT_DEBUG = False # Print extra debugging info to console
-EXPORT_PARTY = True # Whether to export the current party to HTML_DIR/party/
+EXPORT_PARTY = False # Whether to export the current party to HTML_DIR/party/
 SHOW_MISC_DATA = False # Whether to show misc. trainer/badge data in status.html - not fully implemented
 SHOW_BOX_DATA = False # Whether to show current box data in status.html - not fully implemented
 BYPASS_CHECKSUM = False # Whether to bypass checksum tests when reading memory data (Not recommended - but checksum is broken for some games)
 # For the DS games, since memory is a bit wonky, you probably want BYPASS_CHECKSUM set to False. Otherwise it's prone to pull garbage data randomly
 
 # CONFIG OPTIONS - edit as needed
-GAME_GENERATION = 4 # Generation number of the current game
-GAME_NAME = "stormsilver" # Currently valid options: see pr_data.py
+GAME_GENERATION = 1 # Generation number of the current game
+GAME_NAME = "brown" # Currently valid options: see pr_data.py
 #HTML_DIR = "/var/www/html/tpp/new/" # Directory to save html and png output files
 #SPRITE_DIR = HTML_DIR+"sprites/home/" # Directory to pull sprites from
-#HTML_DIR = "./html/" # local testing
-#SPRITE_DIR = "./sprites/home/" # local testing
+HTML_DIR = "./html/" # local testing
+SPRITE_DIR = "./sprites/home/" # local testing
 
 '''
 Ignore Checksum and MemoryRead errors, so we can run this unattended
@@ -51,12 +51,13 @@ class MemoryReadError(Exception):
 Pokemon data class
 '''
 class Pokemon:
-    def __init__(self, pid = 0, spec = 0, gender = 0, shiny = False, item = 0, ot_id = 0, \
+    def __init__(self, pid = 0, spec = 0, spec_raw=0, gender = 0, shiny = False, item = 0, ot_id = 0, \
     ability = 0, ivs = {"hp": 0, "atk": 0, "def": 0, "spe": 0, "spa": 0, "spd": 0}, \
     status = 0, lvl = 0, happiness = 0, hp = 0, maxhp = 0, name = "", name_raw = [], \
     ot_name_raw = [], data= [], chk = 0, form = None, is_egg = False, gen=2):
         self.pid = pid
         self.spec = spec
+        self.spec_raw = spec_raw
         self.gender = gender
         self.shiny = shiny
         self.item = item
@@ -180,13 +181,13 @@ def exportParty(memdata, gen=GAME_GENERATION, directory="party/"):
             outStr += str(hex(poke.pid))
         else:
             outStr += str(hex(poke.ot_id))
-        if GAME_NAME == "redplusplus":
+        if GAME_NAME in ["redplusplus"]:
             outStr += ".pk2"
         else:
             outStr += ".pk"+str(GAME_GENERATION)
         with open(directory+outStr, "wb") as pkm:
             # Convert Red++ mons to PK2
-            if GAME_NAME == "redplusplus":
+            if GAME_NAME in ["redplusplus"]:
                 # 0x4 = item
                 # 0x5 = moves
                 # 0x9 = OT
@@ -471,6 +472,24 @@ def rppToSpecies(spec):
     else:
         return spec_table[spec-152]
 
+def brownToSpecies(spec):
+    try:
+        return [species_map["gen1"].index(spec), 0]
+    except ValueError:
+        spec_brown = { \
+            ## ADD NEW/UNKNOWN SPECIES HERE
+            ## FORMAT:
+            ##
+            ## Spec_Raw: [NatDex, FormNum],
+            ##
+            ## EXAMPLE:
+            ##
+            ## 1209: [77, 1], # Galarian Ponyta
+        }
+        if spec in spec_brown:
+            return spec_brown[spec]
+        return [0, 0]
+
 '''
 Converts a national dex number to a Red++ species index.
 '''
@@ -490,15 +509,8 @@ def specToRpp(spec):
 Converts a national dex number to a Gen 1 species index.
 '''      
 def specToGen1(spec):
-    spec_table = \
-    [ 0, 153, 9, 154, 176, 178, 180, 177, 179, 28, 123, 124, 125, 112, 113, 114, 36, 150, 151, 165, 166, 5, 35, 108, 45, 84, 85, 96, \
-    97, 15, 168, 16, 3, 167, 7, 4, 142, 82, 83, 100, 101, 107, 130, 185, 186, 187, 109, 46, 65, 119, 59, 118, 77, 144, 47, 128, 57, \
-    117, 33, 20, 71, 110, 111, 148, 38, 149, 106, 41, 126, 188, 189, 190, 24, 155, 169, 39, 49, 163, 164, 37, 8, 173, 54, 64, 70, \
-    116, 58, 120, 13, 136, 23, 139, 25, 147, 14, 34, 48, 129, 78, 138, 6, 141, 12, 10, 17, 145, 43, 44, 11, 55, 143, 18, 1, 40, 30, \
-    2, 92, 93, 157, 158, 27, 152, 42, 26, 72, 53, 51, 29, 60, 133, 22, 19, 76, 102, 105, 104, 103, 170, 98, 99, 90, 91, 171, 132, \
-    74, 75, 73, 88, 89, 66, 131, 21 ]
-    if spec < len(spec_table):
-        return spec_table[spec]
+    if spec < len(species_map["gen1"]):
+        return species_map["gen1"][spec]
     else:
         return 255
     
@@ -733,7 +745,13 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
         if (gen == 1):
             ot_id = readByte16(dkm, 0xC)
             party[i].ot_id = ot_id
-            party[i].spec = rppToSpecies(dkm[0x0])
+            if GAME_NAME == "redplusplus":
+                party[i].spec = rppToSpecies(dkm[0x0])
+            elif GAME_NAME == "brown":
+                party[i].spec_raw = dkm[0]
+                spec_form = brownToSpecies(dkm[0x0])
+                party[i].spec = spec_form[0]
+                party[i].form = spec_form[1]
             party[i].lvl = dkm[0x21]
             party[i].status = dkm[0x4]
             party[i].hp = readByte16(dkm, 0x1, True)
@@ -799,14 +817,14 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
                 ev_offset = subs.index(2) * 12
                 mi_offset = subs.index(3) * 12
             
-            spec_raw = readByte16(dkm, 32+gr_offset)
+            party[i].spec_raw = readByte16(dkm, 32+gr_offset)
             
             if GAME_NAME in ["radicalred"]:
-                spec_form = radicalRedSpecies(spec_raw)
+                spec_form = radicalRedSpecies(party[i].spec_raw)
                 party[i].spec = spec_form[0]
                 party[i].form = spec_form[1]
             else:
-                party[i].spec = gen3Species(spec_raw)
+                party[i].spec = gen3Species(party[i].spec_raw)
             
             party[i].item = readByte16(dkm, 32+gr_offset+2)
             party[i].gender = gen3Gender(party[i].spec, party[i].pid)
@@ -908,8 +926,8 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
         if PRINT_VERBOSE:
             print("- {0}: {1} -".format(i+1, party[i].name))
             
-            if GAME_NAME in ["radicalred"]:
-                print("Spe_R: {}".format(spec_raw), end=" | ")
+            if GAME_NAME in ["radicalred", "brown"]:
+                print("Spe_R: {}".format(party[i].spec_raw), end=" | ")
             print("ID: {} ({})".format(party[i].spec, species_names[party[i].spec]), end=" | ")
             print("Frm: {}".format(party[i].form), end=" | ")
             # print("Itm_Raw: {}".format(item_pre_san), end=" | ")
@@ -1103,8 +1121,8 @@ def updateLoop():
         imageStr = "https://screenshake.club/share/dew/output.gif?="
         timeStr = str(int(time.time()))
         memdata = MemData()
-        memdata = updateRAMRemote(memdata, stateStr+timeStr)
-        #memdata = updateRAM(memdata, "rpp_test.state")
+        #memdata = updateRAMRemote(memdata, stateStr+timeStr)
+        memdata = updateRAM(memdata, "brown_test.state")
         memdata.gamedata = updateVars(memdata.gamedata, memdata.memory)
         updateStatFile(memdata.gamedata, "status.html")
         copyfile("status.html", HTML_DIR+"status.html")
