@@ -24,7 +24,7 @@ import base64
 # LOGGING OPTIONS - edit as needed
 PRINT_VERBOSE = True # Verbose logging, shows more info including party stats
 PRINT_DEBUG = False # Print extra debugging info to console
-EXPORT_PARTY = False # Whether to export the current party to HTML_DIR/party/
+EXPORT_PARTY = True # Whether to export the current party to HTML_DIR/party/
 SHOW_MISC_DATA = False # Whether to show misc. trainer/badge data in status.html - not fully implemented
 SHOW_BOX_DATA = False # Whether to show current box data in status.html - not fully implemented
 BYPASS_CHECKSUM = False # Whether to bypass checksum tests when reading memory data (Not recommended - but checksum is broken for some games)
@@ -51,53 +51,48 @@ class MemoryReadError(Exception):
 Pokemon data class
 '''
 class Pokemon:
-    def __init__(self, pid = 0, spec = 0, spec_raw=0, gender = 0, shiny = False, item = 0, ot_id = 0, \
-    ability = 0, ivs = {"hp": 0, "atk": 0, "def": 0, "spe": 0, "spa": 0, "spd": 0}, \
-    status = 0, lvl = 0, happiness = 0, hp = 0, maxhp = 0, name = "", name_raw = [], \
-    ot_name_raw = [], data= [], chk = 0, form = None, is_egg = False, gen=2):
-        self.pid = pid
-        self.spec = spec
-        self.spec_raw = spec_raw
-        self.gender = gender
-        self.shiny = shiny
-        self.item = item
-        self.ot_id = ot_id
-        self.ot_name_raw = ot_name_raw
+    def __init__(self):
+        self.pid = 0
+        self.spec = 0
+        self.spec_raw = 0
+        self.gender = 0
+        self.shiny = False
+        self.item = 0
+        self.ot_id = 0
+        self.ot_name_raw = []
         
-        self.ability = ability
-        self.ivs = ivs # in gen I/II, SpA = SpD and HP = 0.
-        self.status = status
-        self.lvl = lvl
-        self.happiness = happiness
-        self.hp = hp
-        self.maxhp = maxhp
-        self.name = name
-        self.name_raw = name_raw
-        self.is_egg = is_egg
-        self.form = form
+        self.ability = 0
+        self.ivs = {"hp": 0, "atk": 0, "def": 0, "spe": 0, "spa": 0, "spd": 0} # in gen I/II, SpA = SpD and HP = 0.
+        self.status = 0
+        self.lvl = 0
+        self.happiness = 0
+        self.hp = 0
+        self.maxhp = 0
+        self.name = ""
+        self.name_raw = []
+        self.is_egg = False
+        self.form = 0
         
-        self.data = data
-        self.chk = chk
+        self.data = []
+        self.chk = 0
     
 '''
 Save data class
 '''
 class GameData:
-    def __init__(self, trainer_name="", trainer_name_raw = [], time_hours = 0, \
-    time_minutes = 0, time_seconds = 0, rival_name = "", party = [], partysize = 0, \
-    badges = 0, box = [], boxsize = 0, trainer_gender = 0):
-        self.trainer_name = trainer_name
-        self.trainer_name_raw = trainer_name_raw
-        self.trainer_gender = trainer_gender
-        self.time_hours = time_hours
-        self.time_minutes = time_minutes
-        self.time_seconds = time_seconds
-        self.rival_name = rival_name
-        self.party = party
-        self.partysize = partysize
-        self.badges = badges
-        self.box = box
-        self.boxsize = boxsize
+    def __init__(self):
+        self.trainer_name = ""
+        self.trainer_name_raw = []
+        self.trainer_gender = 0
+        self.time_hours = 0
+        self.time_minutes = 0
+        self.time_seconds = 0
+        self.rival_name = ""
+        self.party = []
+        self.partysize = 0
+        self.badges = 0
+        self.box = []
+        self.boxsize = 0
 
 '''
 Memory container class (contains game data, but also entire save state/RAM map)
@@ -168,6 +163,12 @@ def gen3Shiny(tid, sid, pid):
     pid_lower = pid & 0xFFFF
     return (tid ^ sid ^ pid_upper ^ pid_lower) < 8
 
+def gen1GenerateStupidChecksum(pkm):
+    total = pkm.ivs["hp"] + pkm.ivs["atk"] + pkm.ivs["def"] + \
+    pkm.ivs["spe"] + pkm.ivs["spa"] + pkm.ot_id
+    
+    return (total % 0xFFFF)
+
 '''
 Exports party to PK(X) format
 '''
@@ -177,17 +178,42 @@ def exportParty(memdata, gen=GAME_GENERATION, directory="party/"):
         if (poke.shiny):
             outStr += "★ "
         outStr += "- " + poke.name + " - "
+        
         if (poke.pid):
             outStr += str(hex(poke.pid))
         else:
-            outStr += str(hex(poke.ot_id))
+            outStr += str(hex(gen1GenerateStupidChecksum(poke)))
+            
         if GAME_NAME in ["redplusplus"]:
             outStr += ".pk2"
         else:
             outStr += ".pk"+str(GAME_GENERATION)
+            
         with open(directory+outStr, "wb") as pkm:
+            # PK1 files have a special format (to include nickname & ot name)
+            # Matches PKHeX format
+            if gen == 1:
+                pk1 = [0] * 69
+               
+                # species
+                pk1[0] = 0x1
+                pk1[1] = (poke.spec_raw & 0xFF)
+                pk1[2] = 0xFF
+                
+                # pkm data
+                pk1[0x3:0x2F] = poke.data[0x0:0x2D]
+                
+                # ot name
+                for i in range(0, len(poke.ot_name_raw)):
+                    pk1[0x2F+i] = poke.ot_name_raw[i]
+                # nickname
+                for i in range(0, len(poke.name_raw)):
+                    pk1[0x3A+i] = poke.name_raw[i]
+                
+                pkm.write(bytearray(pk1))
             # Convert Red++ mons to PK2
-            if GAME_NAME in ["redplusplus"]:
+            # Matches PKHeX format
+            elif GAME_NAME in ["redplusplus"]:
                 # 0x4 = item
                 # 0x5 = moves
                 # 0x9 = OT
@@ -724,9 +750,9 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
             party[i].data, party[i].chk = getPokeFromMem(memory, i*pokeSize+off_battle, pokeSize)
         except ChecksumError:
             print("Error reading battle party. Trying OW...")
-            for i in range(0, gamedata.partysize): 
+            for j in range(0, gamedata.partysize): 
                 try:
-                    party[i].data, party[i].chk = getPokeFromMem(memory, i*pokeSize+off_party, pokeSize)
+                    party[j].data, party[j].chk = getPokeFromMem(memory, j*pokeSize+off_party, pokeSize)
                 except ChecksumError:
                     raise MemoryReadError("Error reading data from memory")
                     return None
@@ -775,6 +801,8 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
             
             if (GAME_NAME == "redplusplus"):
                 party[i].shiny = gen1RPPShiny(party[i].ivs)
+            else:
+                party[i].shiny = gen2Shiny(party[i].ivs)
             party[i].gender = gen2Gender(genderratiomap[party[i].spec], party[i].ivs["atk"])
                 
         elif (gen == 2):
@@ -800,8 +828,8 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
             party[i].ivs["hp"] = ((party[i].ivs["atk"]&1) << 3) | ((party[i].ivs["def"]&1) << 2) | \
             ((party[i].ivs["spe"]&1) << 1) | ((party[i].ivs["spa"]&1))
             
-            party[i].shiny = genIIShiny(party[i].ivs)
-            party[i].gender = genIIGender(genderratiomap[party[i].spec], party[i].ivs["atk"])
+            party[i].shiny = gen2Shiny(party[i].ivs)
+            party[i].gender = gen2Gender(genderratiomap[party[i].spec], party[i].ivs["atk"])
             
         elif (gen == 3):
             # Some Gen 3 hacks hardcode the same shuffle order for every PKM
@@ -911,6 +939,7 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
             party[i].shiny = gen3Shiny(ot_id, ot_sid, party[i].pid)      
         
         # Sanitize data
+        
         item_pre_san = party[i].item
         if GAME_GENERATION > 3:
             if party[i].item not in range(0, len(itemmap[3])):
@@ -1134,6 +1163,7 @@ def updateLoop():
         if PRINT_VERBOSE:
             print("\nWaiting to exit.")
     except Exception:
+        print("OH DAMN!")
         print(traceback.format_exc())
 
 def main():
