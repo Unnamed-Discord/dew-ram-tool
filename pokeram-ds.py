@@ -1060,10 +1060,13 @@ def updateStatFile(gamedata, statfile):
             else:
                 statFileStr += ("<span>")
             if (len(gamedata.party[i].name) > 7):
-                statFileStr += ("<small><small><small><small>"+gamedata.party[i].name+"</small>")
+                statFileStr += "<small><small><small><small>"
             else:
-                statFileStr += ("<small><small>"+gamedata.party[i].name)
-            statFileStr += ("</span> ")
+                statFileStr += "<small><small>"
+            if gamedata.party[i].shiny:
+                statFileStr += "★ "
+            statFileStr += gamedata.party[i].name
+            statFileStr += ("</small></span> ")
             
             statFileStr += ("<small><small><small>Lv </small>"+str(gamedata.party[i].lvl)+"</small></small></small><br>\n")
             if GAME_GENERATION > 2:
