@@ -15,7 +15,8 @@ PARTY_OFFSETS = {
 "crystal": 0x60DF,
 "white2" : 0x22AB0C,
 "stormsilver": 0x288998,
-"brown": 0xDA43
+"brown": 0xDA43,
+"platinum": 0x28A878
 }
 
 # OFFSET TABLE - These are required for the main script to locate data. All are relative to the PARTY_OFFSET
@@ -154,6 +155,18 @@ OFFSET_TABLE = { \
 "time_sec": None, \
 "badges": None, \
 "gender": None },
+\
+"platinum": # Platinum
+{ "party": PARTY_OFFSETS["platinum"], \
+"battle_party": PARTY_OFFSETS["platinum"], \
+"trainer_name": None, \
+"rival_name": None, \
+"party_size": PARTY_OFFSETS["platinum"] - 0x4, \
+"time_hour": None, \
+"time_min": None, \
+"time_sec": None, \
+"badges": None, \
+"gender": None }
 }
 
 # Probably don't need to change much beyond here

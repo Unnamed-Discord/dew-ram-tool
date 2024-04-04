@@ -31,8 +31,8 @@ BYPASS_CHECKSUM = False # Whether to bypass checksum tests when reading memory d
 # For the DS games, since memory is a bit wonky, you probably want BYPASS_CHECKSUM set to False. Otherwise it's prone to pull garbage data randomly
 
 # CONFIG OPTIONS - edit as needed
-GAME_GENERATION = 1 # Generation number of the current game
-GAME_NAME = "brown" # Currently valid options: see pr_data.py
+GAME_GENERATION = 4 # Generation number of the current game
+GAME_NAME = "platinum" # Currently valid options: see pr_data.py
 #HTML_DIR = "/var/www/html/tpp/new/" # Directory to save html and png output files
 #SPRITE_DIR = HTML_DIR+"sprites/home/" # Directory to pull sprites from
 HTML_DIR = "./html/" # local testing
@@ -700,8 +700,9 @@ def updateVars(gamedata, memory, game=GAME_NAME, gen=GAME_GENERATION):
     elif (3 < gen < 6):
         namelen = 0x10
     
-    gamedata.trainer_name_raw = memory[off_name:off_name+namelen]
-    gamedata.trainer_name = convNameValue(gamedata.trainer_name_raw, gen)
+    if (off_name):
+        gamedata.trainer_name_raw = memory[off_name:off_name+namelen]
+        gamedata.trainer_name = convNameValue(gamedata.trainer_name_raw, gen)
     
     if (off_gender):
         gamedata.trainer_gender = memory[off_gender]
@@ -1153,8 +1154,8 @@ def updateLoop():
         imageStr = "https://screenshake.club/share/dew/output.gif?="
         timeStr = str(int(time.time()))
         memdata = MemData()
-        #memdata = updateRAMRemote(memdata, stateStr+timeStr)
-        memdata = updateRAM(memdata, "brown_test.state")
+        memdata = updateRAMRemote(memdata, stateStr+timeStr)
+        #memdata = updateRAM(memdata, "brown_test.state")
         memdata.gamedata = updateVars(memdata.gamedata, memdata.memory)
         updateStatFile(memdata.gamedata, "status.html")
         copyfile("status.html", HTML_DIR+"status.html")
